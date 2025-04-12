@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Add parent directory to path to allow running from examples directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from einstein_pkg import AICoScientist
+from einstein import AICoScientist
 
 async def main():
     """Run a basic example of the AI Co-scientist system."""

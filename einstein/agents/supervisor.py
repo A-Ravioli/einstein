@@ -2,9 +2,9 @@
 import json
 from typing import Dict, Any, Optional
 
-from einstein_pkg.agents.base import BaseAgent
-from einstein_pkg.memory import ContextMemory
-from einstein_pkg.tools import parse_research_goal_tool
+from einstein.agents.base import BaseAgent
+from einstein.memory import ContextMemory
+from einstein.tools import parse_research_goal_tool
 
 # System message for the supervisor agent
 SUPERVISOR_SYSTEM_MESSAGE = """You are a scientific research supervisor in charge of coordinating a team of specialized AI agents.

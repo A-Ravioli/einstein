@@ -5,7 +5,7 @@ import asyncio
 import argparse
 from dotenv import load_dotenv
 
-from einstein_pkg import AICoScientist
+from einstein import AICoScientist
 
 async def main():
     """Run the Einstein AI Co-scientist system."""
@@ -18,7 +18,7 @@ async def main():
     args = parser.parse_args()
     
     if args.version:
-        from einstein_pkg import __version__
+        from einstein import __version__
         print(f"Einstein AI Co-scientist v{__version__}")
         return 0
     

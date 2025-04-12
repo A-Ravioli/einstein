@@ -9,8 +9,8 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_agentchat.messages import TextMessage, BaseChatMessage
 from autogen_core import CancellationToken
 
-from einstein_pkg.memory import ContextMemory
-from einstein_pkg.config import get_config
+from einstein.memory import ContextMemory
+from einstein.config import get_config
 
 class BaseAgent:
     """Base class for all specialized agents."""

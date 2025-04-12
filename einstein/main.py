@@ -5,9 +5,9 @@ import time
 import asyncio
 from typing import Dict, Any, List, Optional, Tuple, Union
 
-from einstein_pkg.memory import ContextMemory
-from einstein_pkg.config import get_config, configure
-from einstein_pkg.agents import (
+from einstein.memory import ContextMemory
+from einstein.config import get_config, configure
+from einstein.agents import (
     SupervisorAgent,
     GenerationAgent,
     ReflectionAgent,

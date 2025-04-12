@@ -4,7 +4,7 @@ import json
 import time
 from typing import Dict, Any, Optional
 
-from einstein_pkg.config import get_config
+from einstein.config import get_config
 
 class ContextMemory:
     """Persistent storage for maintaining state across operations."""

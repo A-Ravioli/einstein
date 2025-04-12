@@ -8,6 +8,6 @@ built on Microsoft's AutoGen framework.
 
 __version__ = "0.1.0"
 
-from einstein_pkg.main import AICoScientist
+from einstein.main import AICoScientist
 
 __all__ = ["AICoScientist"] 

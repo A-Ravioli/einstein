@@ -3,8 +3,8 @@ import json
 import time
 from typing import Dict, Any, List, Optional
 
-from einstein_pkg.agents.base import BaseAgent
-from einstein_pkg.memory import ContextMemory
+from einstein.agents.base import BaseAgent
+from einstein.memory import ContextMemory
 
 # System message for the ranking agent
 RANKING_SYSTEM_MESSAGE = """You are a scientific hypothesis evaluator.
