@@ -23,6 +23,7 @@ class BaseAgent:
         tools: Optional[List[Callable]] = None,
         api_key: Optional[str] = None,
         model: Optional[str] = None,
+        cerebras: bool = False
     ):
         """
         Initialize base agent.
@@ -46,11 +47,19 @@ class BaseAgent:
         if model is None:
             model = config.default_model
         
-        # Create model client
-        self.model_client = OpenAIChatCompletionClient(
-            model=model,
-            api_key=api_key
-        )
+        if cerebras:
+            # Create model client
+            self.model_client = OpenAIChatCompletionClient(
+                base_url="https://api.cerebras.ai/v1",
+                model=model,
+                api_key=api_key
+            )
+        else:
+            # Create model client
+            self.model_client = OpenAIChatCompletionClient(
+                model=model,
+                api_key=api_key
+            )
         
         # Create the agent
         self.agent = AssistantAgent(

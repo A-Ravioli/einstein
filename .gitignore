@@ -1,0 +1,6 @@
+.env
+/einstein/__pycache__
+/einstein/agents/__pycache__
+/einstein/models/__pycache__
+/einstein/tools/__pycache__
+/einstein/vector_store/__pycache__
