@@ -4,3 +4,4 @@
 /einstein/models/__pycache__
 /einstein/tools/__pycache__
 /einstein/vector_store/__pycache__
+.DS_Store
