@@ -4,3 +4,13 @@
 /einstein/models/__pycache__
 /einstein/tools/__pycache__
 /einstein/vector_store/__pycache__
+
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+*.pyzwz
+*.pyzwzw
