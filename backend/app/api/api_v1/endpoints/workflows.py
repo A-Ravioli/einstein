@@ -2,13 +2,14 @@
 Workflow management endpoints
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.schemas.workflow import WorkflowCreate, WorkflowUpdate, WorkflowResponse
 from app.services.workflow_service import WorkflowService
+from app.services.workflow_execution_service import WorkflowExecutionService
 
 router = APIRouter()
 
@@ -88,12 +89,31 @@ async def delete_workflow(
 async def execute_workflow(
     workflow_id: int,
     platform: str,
+    parameters: Optional[Dict[str, Any]] = None,
+    priority: Optional[int] = 0,
     db: AsyncSession = Depends(get_db)
 ):
     """Execute a workflow on a specific platform"""
-    service = WorkflowService(db)
-    job = await service.execute_workflow(workflow_id, platform)
-    return {"job_id": job.id, "status": job.status, "platform": platform}
+    execution_service = WorkflowExecutionService(db)
+    
+    try:
+        result = await execution_service.submit_workflow(
+            workflow_id=workflow_id,
+            platform=platform,
+            parameters=parameters or {},
+            priority=priority or 0
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Execution failed: {str(e)}"
+        )
 
 
 @router.post("/{workflow_id}/validate")

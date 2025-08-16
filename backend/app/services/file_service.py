@@ -11,6 +11,7 @@ from sqlalchemy import select, and_
 
 from app.models.file import WorkflowFile, FileShare
 from app.schemas.file import WorkflowFileResponse, FileUploadResponse
+from app.services.file_storage_service import FileStorageService
 from app.core.config import settings
 from loguru import logger
 
@@ -20,6 +21,7 @@ class FileService:
     
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.storage_service = FileStorageService()
     
     async def upload_file(
         self, 
@@ -30,31 +32,36 @@ class FileService:
     ) -> FileUploadResponse:
         """Upload a file"""
         try:
-            # Read file content
-            content = await file.read()
-            file_size = len(content)
-            
-            # Calculate MD5 checksum
-            md5_hash = hashlib.md5(content).hexdigest()
-            
             # Generate storage path
             storage_path = f"files/{workflow_id or 'standalone'}/{file.filename}"
             
-            # Detect file type from extension
-            file_type = self._detect_file_type(file.filename)
+            # Detect scientific file type
+            file_type = self.storage_service.detect_scientific_file_type(file.filename)
             
-            # Create file record
+            # Upload to storage backend
+            storage_result = await self.storage_service.upload_file(
+                file=file,
+                file_path=storage_path,
+                metadata={
+                    "workflow_id": str(workflow_id) if workflow_id else None,
+                    "job_id": str(job_id) if job_id else None,
+                    "file_role": file_role,
+                    "file_type": file_type
+                }
+            )
+            
+            # Create file record in database
             file_record = WorkflowFile(
                 filename=file.filename,
                 original_filename=file.filename,
                 workflow_id=workflow_id,
                 job_id=job_id,
                 file_type=file_type,
-                mime_type=file.content_type,
-                storage_path=storage_path,
-                storage_backend=settings.S3_BUCKET and "s3" or "local",
-                file_size=file_size,
-                checksum_md5=md5_hash,
+                mime_type=storage_result["mime_type"],
+                storage_path=storage_result["storage_path"],
+                storage_backend=storage_result["storage_backend"],
+                file_size=storage_result["file_size"],
+                checksum_md5=storage_result["md5_hash"],
                 file_role=file_role
             )
             
@@ -62,15 +69,12 @@ class FileService:
             await self.db.commit()
             await self.db.refresh(file_record)
             
-            # TODO: Upload to actual storage (S3 or local filesystem)
-            # For now, just simulate the upload
-            
             logger.info(f"Uploaded file: {file_record.id} ({file.filename})")
             
             return FileUploadResponse(
                 file_id=file_record.id,
                 filename=file.filename,
-                file_size=file_size,
+                file_size=storage_result["file_size"],
                 file_type=file_type
             )
         
@@ -79,7 +83,7 @@ class FileService:
             logger.error(f"Error uploading file: {e}")
             raise
     
-    async def get_download_url(self, file_id: int) -> Optional[str]:
+    async def get_download_url(self, file_id: int, expires_in: int = 3600) -> Optional[str]:
         """Get download URL for a file"""
         try:
             query = select(WorkflowFile).where(WorkflowFile.id == file_id)
@@ -89,9 +93,11 @@ class FileService:
             if not file_record:
                 return None
             
-            # TODO: Generate actual signed URL for S3 or local file access
-            # For now, return a placeholder URL
-            download_url = f"/api/v1/files/{file_id}/download"
+            # Generate signed download URL from storage service
+            download_url = await self.storage_service.generate_download_url(
+                file_record.storage_path,
+                expires_in=expires_in
+            )
             
             logger.info(f"Generated download URL for file: {file_id}")
             return download_url
@@ -139,8 +145,12 @@ class FileService:
             if not file_record:
                 return False
             
-            # TODO: Delete from actual storage (S3 or local filesystem)
+            # Delete from storage backend
+            storage_deleted = await self.storage_service.delete_file(file_record.storage_path)
+            if not storage_deleted:
+                logger.warning(f"Failed to delete file from storage: {file_record.storage_path}")
             
+            # Delete from database
             await self.db.delete(file_record)
             await self.db.commit()
             
@@ -152,32 +162,22 @@ class FileService:
             logger.error(f"Error deleting file {file_id}: {e}")
             raise
     
-    def _detect_file_type(self, filename: str) -> Optional[str]:
-        """Detect file type from filename extension"""
-        extension = os.path.splitext(filename)[1].lower()
+    async def get_file_content(self, file_id: int) -> Optional[bytes]:
+        """Get file content"""
+        try:
+            query = select(WorkflowFile).where(WorkflowFile.id == file_id)
+            result = await self.db.execute(query)
+            file_record = result.scalar_one_or_none()
+            
+            if not file_record:
+                return None
+            
+            # Download from storage backend
+            content = await self.storage_service.download_file(file_record.storage_path)
+            
+            logger.info(f"Retrieved content for file: {file_id}")
+            return content
         
-        file_type_map = {
-            '.fasta': 'fasta',
-            '.fa': 'fasta',
-            '.fas': 'fasta',
-            '.pdb': 'pdb',
-            '.cif': 'cif',
-            '.sdf': 'sdf',
-            '.mol': 'mol',
-            '.mol2': 'mol2',
-            '.xyz': 'xyz',
-            '.csv': 'csv',
-            '.tsv': 'tsv',
-            '.txt': 'text',
-            '.json': 'json',
-            '.xml': 'xml',
-            '.png': 'image',
-            '.jpg': 'image',
-            '.jpeg': 'image',
-            '.pdf': 'pdf',
-            '.zip': 'archive',
-            '.tar.gz': 'archive',
-            '.tar': 'archive'
-        }
-        
-        return file_type_map.get(extension, 'unknown')
+        except Exception as e:
+            logger.error(f"Error getting file content for {file_id}: {e}")
+            raise

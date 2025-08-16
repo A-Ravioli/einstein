@@ -16,6 +16,7 @@ from app.schemas.workflow import (
     WorkflowValidationResult
 )
 from app.services.job_service import JobService
+from app.tasks.workflow_tasks import execute_workflow_task
 from loguru import logger
 
 
@@ -237,8 +238,8 @@ class WorkflowService:
                 errors=[f"Validation error: {str(e)}"]
             )
     
-    async def execute_workflow(self, workflow_id: int, platform: str) -> Job:
-        """Execute a workflow on a specified platform"""
+    async def execute_workflow(self, workflow_id: int, platform: str, parameters: dict = None) -> dict:
+        """Execute a workflow on a specified platform using Celery"""
         try:
             workflow = await self.get_workflow(workflow_id)
             if not workflow:
@@ -249,17 +250,21 @@ class WorkflowService:
             if not validation.is_valid:
                 raise ValueError(f"Invalid workflow: {', '.join(validation.errors)}")
             
-            # Create and submit job
-            job_service = JobService(self.db)
-            job = await job_service.create_job(
+            # Submit workflow execution to Celery
+            task = execute_workflow_task.delay(
                 workflow_id=workflow_id,
                 platform=platform,
-                parameters={},
-                platform_config={}
+                parameters=parameters or {}
             )
             
-            logger.info(f"Submitted workflow {workflow_id} for execution on {platform}")
-            return job
+            logger.info(f"Submitted workflow {workflow_id} for execution on {platform} (task: {task.id})")
+            
+            return {
+                "task_id": task.id,
+                "workflow_id": workflow_id,
+                "platform": platform,
+                "status": "submitted"
+            }
         
         except Exception as e:
             logger.error(f"Error executing workflow {workflow_id}: {e}")

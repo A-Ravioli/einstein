@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.api.api_v1.api import api_router
-from app.core.database import engine, Base
+from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.logging import setup_logging
 
 # Setup logging
@@ -24,6 +24,12 @@ async def lifespan(app: FastAPI):
         # Create database tables
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        
+        # Initialize default templates
+        from app.services.template_service import initialize_templates
+        async with AsyncSessionLocal() as db:
+            await initialize_templates(db)
+            
     except Exception as e:
         print(f"Database initialization error: {e}")
     

@@ -4,7 +4,7 @@ API v1 router configuration
 
 from fastapi import APIRouter
 
-from app.api.api_v1.endpoints import workflows, platforms, jobs, files
+from app.api.api_v1.endpoints import workflows, platforms, jobs, files, execution, templates
 
 api_router = APIRouter()
 
@@ -13,3 +13,5 @@ api_router.include_router(workflows.router, prefix="/workflows", tags=["workflow
 api_router.include_router(platforms.router, prefix="/platforms", tags=["platforms"])
 api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
+api_router.include_router(execution.router, prefix="/execution", tags=["execution"])
+api_router.include_router(templates.router, prefix="/templates", tags=["templates"])
