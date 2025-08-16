@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.api.api_v1.api import api_router
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.logging import setup_logging
+from app.core.error_handlers import setup_error_handlers
 
 # Setup logging
 setup_logging()
@@ -55,6 +56,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Setup error handlers
+setup_error_handlers(app)
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)

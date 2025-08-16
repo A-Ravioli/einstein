@@ -4,7 +4,7 @@ API v1 router configuration
 
 from fastapi import APIRouter
 
-from app.api.api_v1.endpoints import workflows, platforms, jobs, files, execution, templates
+from app.api.api_v1.endpoints import workflows, platforms, jobs, files, execution, templates, websocket
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(execution.router, prefix="/execution", tags=["execution"])
 api_router.include_router(templates.router, prefix="/templates", tags=["templates"])
+api_router.include_router(websocket.router, prefix="/ws", tags=["websocket"])

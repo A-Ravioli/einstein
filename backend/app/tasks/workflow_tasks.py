@@ -14,6 +14,7 @@ from app.services.job_service import JobService
 from app.services.platform_service import PlatformService
 from app.models.job import JobStatus
 from app.schemas.job import JobUpdate
+from app.websockets.monitoring_websocket import broadcast_job_update, broadcast_task_update
 from loguru import logger
 
 
@@ -97,6 +98,14 @@ async def _execute_workflow_async(task, workflow_id: int, platform: str, paramet
                 status=JobStatus.QUEUED,
                 started_at=datetime.utcnow()
             ))
+            
+            # Broadcast job update
+            await broadcast_job_update(
+                job_id=job.id,
+                status="queued",
+                workflow_id=workflow_id,
+                message=f"Job submitted to {platform}"
+            )
             
             # Update progress
             task.update_state(
@@ -193,6 +202,15 @@ async def _monitor_job_async(task, job_id: int):
                                     logger.warning(f"Could not retrieve results for job {job_id}: {e}")
                         
                         await job_service.update_job(job_id, update_data)
+                        
+                        # Broadcast job update
+                        await broadcast_job_update(
+                            job_id=job_id,
+                            status=new_status.value,
+                            workflow_id=job.workflow_id,
+                            message=f"Job status updated to {new_status.value}"
+                        )
+                        
                         logger.info(f"Job {job_id} status updated to {new_status}")
                     
                     # Update task progress
